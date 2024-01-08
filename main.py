@@ -35,8 +35,7 @@ class MainForm(QMainWindow):
         self.table.verticalHeader().hide()
         self.setCentralWidget(self.table)
 
-
-
+        # self.table.it
         ##toolbar = self.addToolBar("Tool Bar")
         #toolbar.addAction(self.add_button)
 
@@ -55,7 +54,7 @@ class MainForm(QMainWindow):
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM students")
         data = cursor.fetchall()
-
+        #print(data)
         self.table.setRowCount(0)
         for row, item in enumerate(data):
             self.table.insertRow(row)
@@ -64,6 +63,7 @@ class MainForm(QMainWindow):
             self.table.setItem(row, 2, QTableWidgetItem(item[2]))
             self.table.setItem(row, 3, QTableWidgetItem(str(item[3])))
 
+        #self.table.findItems("HI", Qt.MatchFlag)
         cursor.close()
         connection.close()
 
@@ -72,7 +72,7 @@ class MainForm(QMainWindow):
         add.exec()
 
     def search_menu(self):
-        search = SearchStudent()
+        search = SearchStudent(mainform=self)
         search.exec()
 
 class AddStudent(QDialog):
@@ -121,21 +121,41 @@ class AddStudent(QDialog):
 
         self.mainform.load_data()
 
+
 class SearchStudent(QDialog):
-    def __init__(self):
+    def __init__(self, mainform):
         super().__init__()
+        self.mainform = mainform
 
         self.setWindowTitle("Search Student")
 
-        name = QLineEdit()
-        name.setPlaceholderText("Name")
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("Name")
         search_button = QPushButton("Search")
+        search_button.clicked.connect(self.search)
 
         layout = QVBoxLayout()
-        layout.addWidget(name)
+        layout.addWidget(self.name)
         layout.addWidget(search_button)
 
         self.setLayout(layout)
+
+    def search(self):
+        searched_term = self.name.text()
+
+        """connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM students WHERE name = ?", (searched_term,))
+        result = cursor.fetchall()
+        print(result)"""
+
+        result_list = self.mainform.table.findItems(searched_term, Qt.MatchFlag.MatchFixedString)
+
+        for item in result_list:
+            self.mainform.table.item(item.row(), 1).setSelected(True)
+
+        # cursor.close()
+        # connection.close()
 
 
 app = QApplication(sys.argv)
