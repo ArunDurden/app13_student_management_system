@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QStatusBar,\
     QGridLayout, QToolBar, QPushButton, QTableWidget, QTableWidgetItem, QDialog, QLineEdit, QComboBox, QVBoxLayout
 from PyQt6.QtGui import QIcon, QAction
-from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtCore import QSize, Qt, QEvent
 import sys
 import sqlite3
 
@@ -12,12 +12,15 @@ class MainForm(QMainWindow):
 
         super().__init__()
         self.setWindowTitle("Main Window")
+        self.setMinimumSize(800, 600)
 
         menubar = self.menuBar()
-        self.add_button = QAction("Add")
+        add_icon = QIcon("icons/add.png")
+        self.add_button = QAction(add_icon, "Add")
         self.add_button.triggered.connect(self.add_menu)
 
-        self.search_button = QAction("Search")
+        search_icon = QIcon("./icons/search.png")
+        self.search_button = QAction(search_icon, "Search")
         self.search_button.triggered.connect(self.search_menu)
 
         file_menu = menubar.addMenu("File")
@@ -35,18 +38,35 @@ class MainForm(QMainWindow):
         self.table.verticalHeader().hide()
         self.setCentralWidget(self.table)
 
-        # self.table.it
-        ##toolbar = self.addToolBar("Tool Bar")
-        #toolbar.addAction(self.add_button)
+        toolbar = QToolBar()
+        toolbar.addAction(self.add_button)
+        toolbar.addAction(self.search_button)
+        self.addToolBar(toolbar)
 
-        #toolbar.addWidget(QPushButton(add_icon, "ADD"))
-        #toolbar.setBaseSize(16, 16)
-        #toolbar.setMovable(False)
-        #self.addToolBar(area=Qt.ToolBarArea(0), toolbar=toolbar)
+        self.status_bar = QStatusBar()
 
-        #self.addToolBar(toolbar)
-        #toolbar.setIconSize(QSize(50, 50))
+        self.table.cellClicked.connect(self.dummy)
 
+        edit_action = QAction("Edit Record")
+        edit_action.triggered.connect(self.edit)
+        edit_record_button = QPushButton("Edit Record")
+        edit_record_button.addAction(edit_action)
+        self.status_bar.addWidget(edit_record_button)
+
+        delete_action = QAction("Delete Record")
+        delete_action.triggered.connect(self.delete)
+        delete_record_button = QPushButton("Delete Record")
+        delete_record_button.addAction(delete_action)
+        self.status_bar.addWidget(delete_record_button)
+
+        self.status_bar.hide()
+        self.setStatusBar(self.status_bar)
+
+        self.table.installEventFilter(self)
+
+    # def test(self, event):
+    #     if event.type() == Qt.
+    #         print()
 
 
     def load_data(self):
@@ -63,7 +83,6 @@ class MainForm(QMainWindow):
             self.table.setItem(row, 2, QTableWidgetItem(item[2]))
             self.table.setItem(row, 3, QTableWidgetItem(str(item[3])))
 
-        #self.table.findItems("HI", Qt.MatchFlag)
         cursor.close()
         connection.close()
 
@@ -75,6 +94,14 @@ class MainForm(QMainWindow):
         search = SearchStudent(mainform=self)
         search.exec()
 
+    def edit(self):
+        pass
+
+    def delete(self):
+        pass
+
+    def dummy(self):
+        self.status_bar.show()
 class AddStudent(QDialog):
     def __init__(self, mainform):
         super().__init__()
