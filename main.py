@@ -123,27 +123,24 @@ class EditDialog(QDialog):
         self.setLayout(layout)
 
     def edit(self):
+        print("ss")
         row = self.mainform.table.currentItem().row()
         row = str(row + 1)
         print(row)
-        print(self.name.text())
-        print(self.courses.currentText())
-        print(self.mobile.text())
-
-        print(type(self.name.text()))
-        print(type(self.courses.currentText()))
-        print(type(self.mobile.text()))
+        name = self.name.text()
+        course = self.courses.currentText()
+        mobile = self.mobile.text()
 
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
         # cursor.execute(f"SELECT * FROM students WHERE rowid = {row}")
-        cursor.execute(f"UPDATE students SET id = {row}, name = {self.name.text()}, course = {self.courses.currentText()}, mobile = {self.mobile.text()} WHERE id = {row}")
-        # "UPDATE students SET id = 5, name = "Arthur", course = "Math", mobile = "686135654515" WHERE id = 5"
+        # print(cursor.fetchall())
+        query = "UPDATE students SET id = ?, name = ?, course = ?, mobile = ? WHERE id = ?"
+        cursor.execute(query, (row, name, course, mobile, row))
         connection.commit()
-
         cursor.close()
         connection.close()
-        # self.mainform.table
+        self.mainform.load_data()
 
 class AddStudent(QDialog):
     def __init__(self, mainform):
@@ -183,6 +180,8 @@ class AddStudent(QDialog):
         cursor.execute("INSERT INTO students (id, name, course, mobile) VALUES (?, ? ,?, ?)",
                        (ID, self.name.text(), self.courses.currentText(), self.mobile.text()))
         connection.commit()
+        cursor.close()
+        connection.close()
 
         self.mainform.load_data()
 
