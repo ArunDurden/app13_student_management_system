@@ -1,10 +1,9 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QStatusBar,\
     QGridLayout, QToolBar, QPushButton, QTableWidget, QTableWidgetItem, QDialog, QLineEdit, QComboBox, QVBoxLayout
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtGui import QIcon, QAction, QMouseEvent
 from PyQt6.QtCore import QSize, Qt, QEvent
 import sys
 import sqlite3
-
 
 
 class MainForm(QMainWindow):
@@ -42,31 +41,21 @@ class MainForm(QMainWindow):
         toolbar.addAction(self.add_button)
         toolbar.addAction(self.search_button)
         self.addToolBar(toolbar)
-
         self.status_bar = QStatusBar()
 
-        self.table.cellClicked.connect(self.dummy)
-
-        edit_action = QAction("Edit Record")
-        edit_action.triggered.connect(self.edit)
         edit_record_button = QPushButton("Edit Record")
-        edit_record_button.addAction(edit_action)
+        edit_record_button.clicked.connect(self.edit_student)
         self.status_bar.addWidget(edit_record_button)
 
-        delete_action = QAction("Delete Record")
-        delete_action.triggered.connect(self.delete)
-        delete_record_button = QPushButton("Delete Record")
-        delete_record_button.addAction(delete_action)
-        self.status_bar.addWidget(delete_record_button)
 
-        self.status_bar.hide()
+        delete_record_button = QPushButton("Delete Record")
+        delete_record_button.clicked.connect(self.delete)
+        self.status_bar.addWidget(delete_record_button)
         self.setStatusBar(self.status_bar)
 
-        self.table.installEventFilter(self)
+        self.status_bar.hide()
+        self.table.cellClicked.connect(self.status_bar_active)
 
-    # def test(self, event):
-    #     if event.type() == Qt.
-    #         print()
 
 
     def load_data(self):
@@ -87,24 +76,80 @@ class MainForm(QMainWindow):
         connection.close()
 
     def add_menu(self):
-        add = AddStudent(mainform=self)
-        add.exec()
+        add_form = AddStudent(mainform=self)
+        add_form.exec()
 
     def search_menu(self):
         search = SearchStudent(mainform=self)
         search.exec()
 
-    def edit(self):
-        pass
+    def edit_student(self):
+        edit_form = EditDialog(mainform=self)
+        edit_form.exec()
 
     def delete(self):
-        pass
+        print("hi")
 
-    def dummy(self):
+    def status_bar_active(self):
         self.status_bar.show()
+
+
+class EditDialog(QDialog):
+    def __init__(self, mainform):
+        super().__init__()
+        self.setWindowTitle("Edit Record")
+        self.mainform = mainform
+
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("Enter the student name")
+
+        self.courses = QComboBox()
+        course_list = ["Astronomy", "Biology", "Math", "Physics"]
+        self.courses.addItems(course_list)
+
+        self.mobile = QLineEdit()
+        self.mobile.setPlaceholderText("Enter the mobile number")
+
+        submit = QPushButton("Submit")
+        submit.clicked.connect(self.edit)
+
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.name)
+        layout.addWidget(self.courses)
+        layout.addWidget(self.mobile)
+        layout.addWidget(submit)
+
+        self.setLayout(layout)
+
+    def edit(self):
+        row = self.mainform.table.currentItem().row()
+        row = str(row + 1)
+        print(row)
+        print(self.name.text())
+        print(self.courses.currentText())
+        print(self.mobile.text())
+
+        print(type(self.name.text()))
+        print(type(self.courses.currentText()))
+        print(type(self.mobile.text()))
+
+        connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        # cursor.execute(f"SELECT * FROM students WHERE rowid = {row}")
+        cursor.execute(f"UPDATE students SET id = {row}, name = {self.name.text()}, course = {self.courses.currentText()}, mobile = {self.mobile.text()} WHERE id = {row}")
+        # "UPDATE students SET id = 5, name = "Arthur", course = "Math", mobile = "686135654515" WHERE id = 5"
+        connection.commit()
+
+        cursor.close()
+        connection.close()
+        # self.mainform.table
+
 class AddStudent(QDialog):
     def __init__(self, mainform):
         super().__init__()
+        self.setWindowTitle("Add Student")
+
         self.mainform = mainform
         self.name = QLineEdit()
         self.name.setPlaceholderText("Enter the student name")
@@ -127,9 +172,6 @@ class AddStudent(QDialog):
 
         self.setLayout(layout)
 
-    """def last_id(self, mainform):
-        mainform.table."""
-
     def add(self):
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
@@ -138,16 +180,11 @@ class AddStudent(QDialog):
         length = len(table_list)
         ID = str(length + 1)
 
-        print(ID, type(ID))
-        print(self.name.text(), type(self.name.text()))
-        print(self.courses.currentText(), type(self.courses.currentText()))
-        print(self.mobile.text(), type(self.mobile.text()))
         cursor.execute("INSERT INTO students (id, name, course, mobile) VALUES (?, ? ,?, ?)",
                        (ID, self.name.text(), self.courses.currentText(), self.mobile.text()))
         connection.commit()
 
         self.mainform.load_data()
-
 
 class SearchStudent(QDialog):
     def __init__(self, mainform):
@@ -181,8 +218,7 @@ class SearchStudent(QDialog):
         for item in result_list:
             self.mainform.table.item(item.row(), 1).setSelected(True)
 
-        # cursor.close()
-        # connection.close()
+
 
 
 app = QApplication(sys.argv)
