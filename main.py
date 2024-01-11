@@ -47,7 +47,6 @@ class MainForm(QMainWindow):
         edit_record_button.clicked.connect(self.edit_student)
         self.status_bar.addWidget(edit_record_button)
 
-
         delete_record_button = QPushButton("Delete Record")
         delete_record_button.clicked.connect(self.delete)
         self.status_bar.addWidget(delete_record_button)
@@ -56,6 +55,12 @@ class MainForm(QMainWindow):
         self.status_bar.hide()
         self.table.cellClicked.connect(self.status_bar_active)
 
+
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.LeftButton:
+    #         print("Left mouse button clicked")
+    #     elif event.button() == Qt.RightButton:
+    #         print("Right mouse button clicked")
 
 
     def load_data(self):
@@ -87,11 +92,13 @@ class MainForm(QMainWindow):
         edit_form = EditDialog(mainform=self)
         edit_form.exec()
 
-    def delete(self):
+    def delete(self):   
         print("hi")
 
     def status_bar_active(self):
-        self.status_bar.show()
+        if self.table.hasFocus():
+            self.status_bar.show()
+
 
 
 class EditDialog(QDialog):
@@ -105,21 +112,21 @@ class EditDialog(QDialog):
         self.row = 0
 
         name, course, mobile = self.existing_data()
-        # print(name, course, mobile)
+
         self.name = QLineEdit()
         self.name.setText(name)
 
         self.courses = QComboBox()
         course_list = ["Astronomy", "Biology", "Math", "Physics"]
         self.courses.addItems(course_list)
-        self.courses.itemText(course)
+        # self.courses.itemText(course)
+        self.courses.setCurrentText(course)
 
         self.mobile = QLineEdit()
         self.mobile.setText(mobile)
 
         submit = QPushButton("Submit")
         submit.clicked.connect(self.edit)
-
 
         layout = QVBoxLayout()
         layout.addWidget(self.name)
@@ -132,12 +139,15 @@ class EditDialog(QDialog):
     def existing_data(self):
         row = self.mainform.table.currentItem().row()
         row = str(row + 1)
+        # print(row)
 
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM students  WHERE rowid = ?", (row,))
         id, name, course, mobile = cursor.fetchone()
-        return name, course, mobile
+        mobile = str(mobile)
+
+        return name, course, str(mobile)
 
     def edit(self):
         if self.mainform.table.currentItem():
@@ -199,10 +209,10 @@ class AddStudent(QDialog):
         cursor.execute("SELECT * FROM students")
         table_list = cursor.fetchall()
         length = len(table_list)
-        ID = str(length + 1)
+        id = str(length + 1)
 
         cursor.execute("INSERT INTO students (id, name, course, mobile) VALUES (?, ? ,?, ?)",
-                       (ID, self.name.text(), self.courses.currentText(), self.mobile.text()))
+                       (id, self.name.text(), self.courses.currentText(), self.mobile.text()))
         connection.commit()
         cursor.close()
         connection.close()
