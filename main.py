@@ -98,17 +98,24 @@ class EditDialog(QDialog):
     def __init__(self, mainform):
         super().__init__()
         self.setWindowTitle("Edit Record")
-        self.mainform = mainform
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
 
+        self.mainform = mainform
+        self.row = 0
+
+        name, course, mobile = self.existing_data()
+        # print(name, course, mobile)
         self.name = QLineEdit()
-        self.name.setPlaceholderText("Enter the student name")
+        self.name.setText(name)
 
         self.courses = QComboBox()
         course_list = ["Astronomy", "Biology", "Math", "Physics"]
         self.courses.addItems(course_list)
+        self.courses.itemText(course)
 
         self.mobile = QLineEdit()
-        self.mobile.setPlaceholderText("Enter the mobile number")
+        self.mobile.setText(mobile)
 
         submit = QPushButton("Submit")
         submit.clicked.connect(self.edit)
@@ -122,10 +129,24 @@ class EditDialog(QDialog):
 
         self.setLayout(layout)
 
-    def edit(self):
-        print("ss")
+    def existing_data(self):
         row = self.mainform.table.currentItem().row()
         row = str(row + 1)
+
+        connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM students  WHERE rowid = ?", (row,))
+        id, name, course, mobile = cursor.fetchone()
+        return name, course, mobile
+
+    def edit(self):
+        if self.mainform.table.currentItem():
+            row = self.mainform.table.currentItem().row()
+            row = str(row + 1)
+            self.row = row
+        else:
+            row = self.row
+
         print(row)
         name = self.name.text()
         course = self.courses.currentText()
@@ -142,10 +163,13 @@ class EditDialog(QDialog):
         connection.close()
         self.mainform.load_data()
 
+
 class AddStudent(QDialog):
     def __init__(self, mainform):
         super().__init__()
         self.setWindowTitle("Add Student")
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
 
         self.mainform = mainform
         self.name = QLineEdit()
