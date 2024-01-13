@@ -27,7 +27,7 @@ class MainForm(QMainWindow):
         file_menu.addAction(self.add_button)
         help_menu.addAction(self.search_button)
 
-        self.table = QTableWidget()
+        self.table = TableWidget(self)
         self.table.setColumnCount(4)
         column_names = ["ID", "Name", "Courses", "Mobile"]
         self.table.setHorizontalHeaderLabels(column_names)
@@ -41,7 +41,8 @@ class MainForm(QMainWindow):
         toolbar.addAction(self.add_button)
         toolbar.addAction(self.search_button)
         self.addToolBar(toolbar)
-        self.status_bar = QStatusBar()
+
+        self.status_bar = StatusBar()
 
         edit_record_button = QPushButton("Edit Record")
         edit_record_button.clicked.connect(self.edit_student)
@@ -53,15 +54,9 @@ class MainForm(QMainWindow):
         self.setStatusBar(self.status_bar)
 
         self.status_bar.hide()
-        self.table.cellClicked.connect(self.status_bar_active)
 
-
-    # def mousePressEvent(self, event):
-    #     if event.button() == Qt.LeftButton:
-    #         print("Left mouse button clicked")
-    #     elif event.button() == Qt.RightButton:
-    #         print("Right mouse button clicked")
-
+    def mousePressEvent(self, event):
+        self.status_bar.hide()
 
     def load_data(self):
         connection = sqlite3.connect("database.db")
@@ -96,9 +91,71 @@ class MainForm(QMainWindow):
         print("hi")
 
     def status_bar_active(self):
-        if self.table.hasFocus():
-            self.status_bar.show()
+        self.status_bar.show()
 
+
+class StatusBar(QStatusBar):
+    def mousePressEvent(self, event):
+        pass
+
+
+class TableWidget(QTableWidget):
+
+    def __init__(self, mainform):
+        super().__init__()
+        self.mainform = mainform
+
+    def mousePressEvent(self, event):
+        x_column = event.pos().x()
+        y_row = event.pos().y()
+
+        # print(x_column)
+        # print(y_row)
+
+        if event.pos().x() >= 399:
+            self.mainform.status_bar.hide()
+        else:
+            row_count = self.rowCount()
+
+            value1 = 0
+            value2 = 30
+            range_list = []
+            dict1 = {}
+            row = 0
+            column = 0
+
+            for index in range(0, row_count):
+                dict1[index] = range(value1, value2)
+                range_list.append(dict1[index])
+                value1 = value1 + 30
+                value2 = value2 + 30
+
+            for index, item in enumerate(range_list):
+                if y_row in item:
+                    row = index
+                    break
+
+            if x_column in range(1, 100):
+                column = 0
+                # return column
+
+            elif x_column in range(101, 200):
+                column = 1
+
+            elif x_column in range(201, 300):
+                column = 2
+
+            elif x_column in range(301, 400):
+                column = 3
+
+            # print(column)
+            # print(row)
+
+            print(self.item(row, column).text())
+
+            item = self.item(row, column)
+            self.setCurrentItem(item)
+            self.mainform.status_bar_active()
 
 
 class EditDialog(QDialog):
@@ -219,6 +276,7 @@ class AddStudent(QDialog):
 
         self.mainform.load_data()
 
+
 class SearchStudent(QDialog):
     def __init__(self, mainform):
         super().__init__()
@@ -250,8 +308,6 @@ class SearchStudent(QDialog):
 
         for item in result_list:
             self.mainform.table.item(item.row(), 1).setSelected(True)
-
-
 
 
 app = QApplication(sys.argv)
