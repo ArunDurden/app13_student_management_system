@@ -4,22 +4,26 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QStatu
 from PyQt6.QtGui import QIcon, QAction, QMouseEvent
 from PyQt6.QtCore import QSize, Qt, QEvent
 import sys
-import sqlite3
+import mysql.connector
 
 
 class DatabaseConnection:
 
-    def __init__(self, database_file="database.db"):
-        self.database_file = database_file
+    def __init__(self, host="localhost", user="root", password="pythoncourse", database="school"):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.database = database
 
     def connection(self):
-        connection = sqlite3.connect(self.database_file)
+        connection = mysql.connector.connect(host=self.host, user=self.user, password=self.password, database=self.database)
         return connection
 
     @staticmethod
     def cursor(connection):
         cursor = connection.cursor()
         return cursor
+
 
 class MainForm(QMainWindow):
     def __init__(self):
@@ -223,13 +227,20 @@ class EditDialog(QDialog):
 
     def existing_data(self):
         row = self.main_form.table.currentItem().row()
-        row = str(row + 1)
+        row = row + 1
+        # print(row)
 
         connection = DatabaseConnection().connection()
         cursor = DatabaseConnection.cursor(connection)
-        cursor.execute("SELECT * FROM students  WHERE rowid = ?", (row,))
-        id, name, course, mobile = cursor.fetchone()
-        mobile = str(mobile)
+        cursor.execute("SELECT * FROM students WHERE id = %s", (row,))
+        result = cursor.fetchall()
+        result = list(result)
+        # print(result)
+
+        name = result[0][1]
+        course = result[0][2]
+        mobile = result[0][3]
+        # print(name, course, mobile)
 
         cursor.close()
         connection.close()
@@ -252,7 +263,7 @@ class EditDialog(QDialog):
         cursor = DatabaseConnection.cursor(connection)
         # cursor.execute(f"SELECT * FROM students WHERE rowid = {row}")
         # print(cursor.fetchall())
-        query = "UPDATE students SET id = ?, name = ?, course = ?, mobile = ? WHERE id = ?"
+        query = "UPDATE students SET id = %s, name = %s, course = %s, mobile = %s WHERE id = %s"
         cursor.execute(query, (row, name, course, mobile, row))
         connection.commit()
         cursor.close()
@@ -290,7 +301,7 @@ class DeleteDialog(QDialog):
 
         connection = DatabaseConnection().connection()
         cursor = DatabaseConnection.cursor(connection)
-        cursor.execute("DELETE FROM students WHERE id = ?", (id, ))
+        cursor.execute("DELETE FROM students WHERE id = %s", (id, ))
         connection.commit()
 
         self.main_form.load_data()
@@ -362,7 +373,7 @@ class AddStudent(QDialog):
         length = len(table_list)
         id = str(length + 1)
 
-        cursor.execute("INSERT INTO students (id, name, course, mobile) VALUES (?, ? ,?, ?)",
+        cursor.execute("INSERT INTO students (id, name, course, mobile) VALUES (%s, %s ,%s, %s)",
                        (id, self.name.text(), self.courses.currentText(), self.mobile.text()))
         connection.commit()
         cursor.close()
